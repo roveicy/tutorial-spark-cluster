@@ -1,0 +1,64 @@
+version: "3"
+services:
+  spark-master:
+    image: dre_hh/spark
+    command: bin/spark-class org.apache.spark.deploy.master.Master -h spark-master
+    hostname: spark-master
+    environment:
+      MASTER: spark://spark-master:7077
+      SPARK_CONF_DIR: /app/conf/spark_master
+      SPARK_PUBLIC_DNS: localhost
+    expose:
+      - 7001
+      - 7002
+      - 7003
+      - 7004
+      - 7005
+      - 7077
+      - 6066
+    ports:
+      - 6066:6066
+      - 7077:7077
+      - 8080:8080
+    volumes:
+      - .:/app
+
+  spark-worker:
+    image: dre_hh/spark
+    command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    hostname: spark-worker
+    environment:
+      SPARK_CONF_DIR: /app/conf/spark_worker
+      SPARK_WORKER_CORES: 3
+      SPARK_WORKER_MEMORY: 1g
+      SPARK_WORKER_PORT: 8881
+      SPARK_WORKER_WEBUI_PORT: 8081
+      SPARK_PUBLIC_DNS: localhost
+    expose:
+      - 7012
+      - 7013
+      - 7014
+      - 7015
+      - 8881
+    ports:
+      - 8081:8081
+    volumes:
+      - .:/app
+
+  spark-notebook:
+    build: .
+    image: spark-notebook
+    command: pyspark --master  spark://spark-master:7077
+    environment:
+      PYSPARK_DRIVER_PYTHON: jupyter
+      PYSPARK_DRIVER_PYTHON_OPTS: notebook --port=9000 --no-browser --ip=0.0.0.0 --allow-root
+      PYSPARK_PYTHON: python3
+      SPARK_CONF_DIR: /app/conf/spark_notebook
+      SPARK_PUBLIC_DNS: localhost
+    ports:
+      - 9000:9000
+    volumes:
+      - .:/app
+    working_dir: /app
+
+
